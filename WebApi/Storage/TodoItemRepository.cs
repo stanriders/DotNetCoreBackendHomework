@@ -1,9 +1,9 @@
 using System;
-using System.Data;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
-using Microsoft.Extensions.Configuration;
-using Npgsql;
+using WebApi.Storage.Contracts;
 using WebApi.Storage.Contracts.Entities;
 using WebApi.Storage.Contracts.Repositories;
 
@@ -11,34 +11,41 @@ namespace WebApi.Storage
 {
     public class TodoItemRepository : ITodoItemRepository
     {
-        private readonly string _connectionString;
+        private readonly IDbConnectionAdapter _dbConnectionAdapter;
 
-        public TodoItemRepository(IConfiguration configuration)
+        public TodoItemRepository(IDbConnectionAdapter dbConnectionAdapter)
         {
-            _connectionString = configuration.GetConnectionString("postgres");
+            _dbConnectionAdapter = dbConnectionAdapter;
         }
 
         public async Task<TodoItemEntity?> GetAsync(Guid id)
         {
-            using var dbConnection = GetDbConnection();
+            using var dbConnection = _dbConnectionAdapter.GetDbConnection();
 
-            var item = await dbConnection.QueryFirstOrDefaultAsync<TodoItemEntity>(@"
-                select * from todoItems
-                where id = :id;
-            ", new { id });
+            var item = await dbConnection.GetAsync<TodoItemEntity>(id);
 
             return item;
         }
 
-        public Task AddOrUpdateAsync(TodoItemEntity entity)
+        public async Task<List<TodoItemEntity>?> GetAllAsync()
         {
-            // TODO: implement
-            throw new NotImplementedException();
+            using var dbConnection = _dbConnectionAdapter.GetDbConnection();
+
+            var items = await dbConnection.GetListAsync<TodoItemEntity>();
+
+            return items.ToList();
         }
 
-        private IDbConnection GetDbConnection()
+        public async Task<TodoItemEntity> AddOrUpdateAsync(TodoItemEntity entity)
         {
-            return new NpgsqlConnection(_connectionString);
+            using var dbConnection = _dbConnectionAdapter.GetDbConnection();
+
+            if(entity.Id == default)
+                entity.Id = await dbConnection.InsertAsync<Guid, TodoItemEntity>(entity);
+            else
+                await dbConnection.UpdateAsync(entity);
+
+            return entity;
         }
     }
 }

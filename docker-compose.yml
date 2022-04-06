@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./WebApi/.
+    depends_on:
+      - postgres
+      - rabbitmq
+      - identity
+    links:
+      - postgres
+      - rabbitmq
+      - identity
+    ports:
+      - "5000:5000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5000
+      - ConnectionStrings__postgres=Host=postgres;Database=homework;Username=tester;Password=tester
+      - RabbitMq__Url=rabbitmq
+      - RabbitMq__Username=tester
+      - RabbitMq__Password=tester
+
+  identity:
+    build: ./WebApi.IdentityServer/.
+    ports:
+      - "5001:5001"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5001
+
+  postgres:
+    image: postgres
+    environment:
+      - POSTGRES_USER=tester
+      - POSTGRES_PASSWORD=tester
+      - POSTGRES_DB=homework
+    volumes:
+      - ./db/:/var/lib/postgresql/data/
+      - ./dbinit.sql:/docker-entrypoint-initdb.d/dbinit.sql
+    ports:
+      - "5432:5432"
+
+  rabbitmq:
+    image: "rabbitmq:3-management"
+    environment:
+      - RABBITMQ_DEFAULT_USER=tester
+      - RABBITMQ_DEFAULT_PASS=tester
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - ./rabbitmq/:/data/

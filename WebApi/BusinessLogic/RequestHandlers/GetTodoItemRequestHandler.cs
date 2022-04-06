@@ -1,5 +1,6 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
+using AutoMapper;
 using WebApi.BusinessLogic.Contracts.Exceptions;
 using WebApi.BusinessLogic.Contracts.GetTodoItem;
 using WebApi.Storage.Contracts.Repositories;
@@ -9,10 +10,12 @@ namespace WebApi.BusinessLogic.RequestHandlers
     public class GetTodoItemRequestHandler
     {
         private readonly ITodoItemRepository _todoItemRepository;
+        private readonly IMapper _mapper;
 
-        public GetTodoItemRequestHandler(ITodoItemRepository todoItemRepository)
+        public GetTodoItemRequestHandler(ITodoItemRepository todoItemRepository, IMapper mapper)
         {
             _todoItemRepository = todoItemRepository;
+            _mapper = mapper;
         }
 
         public async Task<GetTodoItemResponse> HandleAsync(Guid id)
@@ -21,15 +24,10 @@ namespace WebApi.BusinessLogic.RequestHandlers
 
             if (item == null)
             {
-                throw new BadRequestException("NotFound");
+                throw new NotFoundException("Задача не существует");
             }
 
-            return new GetTodoItemResponse
-            {
-                Id = item.Id,
-                Title = item.Title,
-                IsCompleted = item.IsCompleted
-            };
+            return _mapper.Map<GetTodoItemResponse>(item);
         }
     }
 }

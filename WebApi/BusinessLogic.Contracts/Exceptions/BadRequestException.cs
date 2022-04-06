@@ -1,14 +1,10 @@
-using System;
 
 namespace WebApi.BusinessLogic.Contracts.Exceptions
 {
-    public class BadRequestException : Exception
+    public class BadRequestException : ErrorCodeException
     {
-        public string ErrorCode { get; }
-
-        public BadRequestException(string errorCode)
+        public BadRequestException(string errorCode) : base(errorCode)
         {
-            ErrorCode = errorCode;
         }
     }
 }
